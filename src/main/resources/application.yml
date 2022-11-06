@@ -1,0 +1,104 @@
+server:
+  port: 8082
+  servlet:
+    contextPath: /subscribe
+  tomcat:
+    accesslog:
+      enabled: true
+
+feign:
+  hystrix:
+    enabled: false
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        
+logging:
+  level:
+    '[org.hibernate.sql]': debug
+    '[org.hibernate.type]': trace
+    '[com.ipo.subscribe]': debug
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: default
+#   datasource:
+#     url: jdbc:h2:tcp://localhost/~/subscribe
+#     username: sa
+#     password: 
+#     driver-class-name: org.h2.Driver
+  datasource:
+    url: jdbc:mysql://localhost:3306/subscribe?serverTimezone=Asia/Seoul
+    username: root
+    password: rootroot
+    driver-class-name: com.mysql.cj.jdbc.Driver  #com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database: mysql
+
+kafka:
+  bootstrap-servers: localhost:9092
+  consumer:
+    key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    group.id: subscribe
+    auto.offset.reset: earliest
+  producer:
+    key.serializer: org.apache.kafka.common.serialization.StringSerializer
+    value.serializer: org.apache.kafka.common.serialization.StringSerializer
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: docker
+#   datasource:
+#     url: jdbc:h2:tcp://localhost/~/subscribe
+#     username: sa
+#     password: 
+#     driver-class-name: org.h2.Driver
+#  datasource:
+#    url: jdbc:mysql://ecomarket-ecoorder-db.cgcyiu667p2z.ap-northeast-2.rds.amazonaws.com:3306/ecoorder
+#    username: root
+#    password: rootroot
+#    driver-class-name: com.mysql.cj.jdbc.Driver  #com.mysql.cj.jdbc.Driver
+  datasource:
+    url: jdbc:mysql://mysql:3306/subscribe
+    username: root
+    password: rootroot
+    driver-class-name: com.mysql.cj.jdbc.Driver  #com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database: mysql
+
+kafka:
+#  bootstrap-servers: kafka:9092
+  consumer:
+    bootstrap-servers: kafka.default.svc.cluster.local:9092
+    key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    group.id: subscribe
+    auto.offset.reset: earliest
+  producer:
+    bootstrap-servers: kafka-0.kafka-headless.default.svc.cluster.local:9092
+    key.serializer: org.apache.kafka.common.serialization.StringSerializer
+    value.serializer: org.apache.kafka.common.serialization.StringSerializer
