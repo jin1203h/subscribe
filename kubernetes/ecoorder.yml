@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subscribe
+  namespace: ecomarket
+  labels:
+    app: subscribe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subscribe
+  template:
+    metadata:
+      labels:
+        app: subscribe
+    spec:
+      containers:
+        - name: subscribe
+          # image: 104844728320.dkr.ecr.ap-northeast-2.amazonaws.com/ecoorder:latest
+          image: AWS_ECR_URI
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+          # livenessProbe:
+          #   httpGet:
+          #     path: '/subscribes/actuator/health'
+          #     port: 8082
+          #   initialDelaySeconds: 5
+          #   timeoutSeconds: 2
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: subscribe-svc
+  namespace: ecomarket
+  labels:
+    app: subscribe
+spec:
+  ports:
+    - port: 80
+      targetPort: 8082
+  selector:
+    app: subscribe
+  type: NodePort
+  #type: LoadBalancer
