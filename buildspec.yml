@@ -1,0 +1,44 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      # docker: 20
+      java: corretto11
+    commands:
+      - COMMIT_HASH=$(echo $CODEBUILD_BUILD_NUMBER)
+      - IMA_TAG=v${COMMIT_HASH:=latest}
+      # - IMA_TAG=latest
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin/kubectl
+      - mkdir ~/.kube
+      - aws eks --region ap-northeast-2 update-kubeconfig --name ecomarket-eks-cluster --role-arn arn:aws:iam::104844728320:role/codebuild-ecoorder-backend2-service-role
+      - aws eks update-kubeconfig --name ecomarket-eks-cluster
+      # - kubectl get po -n kube-system
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/
+  build:
+    commands:
+      - echo Build Starting on `date`
+      - chmod 755 gradlew
+      - ./gradlew build -x test
+      - echo Building the Docker image
+      - docker build -t $REPOSITORY_URI:$IMA_TAG .
+      - docker push $REPOSITORY_URI:$IMA_TAG
+      # - docker build -t $REPOSITORY_URI:$IMA_TAG .
+      # - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMA_TAG
+      # - docker push $REPOSITORY_URI:$IMA_TAG
+  post_build:
+    commands:
+      - AWS_ECR_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMA_TAG
+      - DATE='date'
+      - echo AWS_ECR_URI $AWS_ECR_URI
+      - echo Build completed on $DATE
+      - sed -i.bak 's#AWS_ECR_URI#'"$AWS_ECR_URI"'#' ./kubernetes/subscribe.yml
+      # - sed -i.bak 's#DATE_STRING#'"$DATE"'#' ./subscribe.yml
+      - echo kubectl set image deployment.apps/subscribe subscribe=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMA_TAG
+      - kubectl delete -f ./kubernetes/subscribe.yml
+      - kubectl apply -f ./kubernetes/subscribe.yml

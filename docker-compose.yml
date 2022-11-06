@@ -1,0 +1,30 @@
+version: "3"
+services:
+  subscribe:
+    build: .
+    restart: on-failure
+    container_name: subscribe
+    networks:
+      - ipo-network
+    ports:
+      - 8082:8082
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql
+    container_name: mysql-subscribe
+    networks:
+      - ipo-network
+    environment:
+      MYSQL_DATABASE: subscribe
+      MYSQL_ROOT_PASSWORD: rootroot
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - 3308:3308
+
+networks:
+  ipo-network:
+    name: ipo-network
